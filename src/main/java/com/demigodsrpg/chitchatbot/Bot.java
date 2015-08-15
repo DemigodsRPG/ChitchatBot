@@ -130,7 +130,7 @@ public class Bot implements Listener {
                     if (!"".equals(sentence)) {
                         Chitchat.sendMessage(getPrefix() + sentence);
                     } else {
-                        Chitchat.sendMessage(getPrefix() + "beep. boop. beep.");
+                        Chitchat.sendMessage(getPrefix() + "01100010 01100101 01100101 01110000 00101110 00100000 01100010 01101111 01101111 01110000 00101110 00100000 01100010 01100101 01100101 01110000 00101110 00100000");
                     }
                 }, 10 * (1 + RANDOM.nextInt(2)));
             } else {
