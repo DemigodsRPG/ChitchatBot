@@ -116,6 +116,10 @@ public class Bot implements Listener {
         return new Brain();
     }
 
+    private String lastPlayer = "";
+    private Long lastTime = 0L;
+    private String lastMessage = "";
+
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onChat(AsyncPlayerChatEvent event) {
         String message = event.getMessage();
@@ -124,11 +128,13 @@ public class Bot implements Listener {
             if (spamAmount < 1) {
                 String[] parts = message.toLowerCase().trim().split("\\s+");
                 String word = parts[RANDOM.nextInt(parts.length)];
-                String sentence = getBrain().getSentence(!word.toLowerCase().contains("@" + getName().toLowerCase())
-                        ? word : null);
+                String[] sentence = getBrain().getSentence(!word.toLowerCase().contains("@" + getName().toLowerCase())
+                        ? word : null).split("" + (char) 10);
                 Bukkit.getScheduler().scheduleAsyncDelayedTask(BotPlugin.INST, () -> {
-                    if (!"".equals(sentence)) {
-                        Chitchat.sendMessage(getPrefix() + sentence);
+                    if (!"".equals(sentence[0])) {
+                        for (String part : sentence) {
+                            Chitchat.sendMessage(getPrefix() + part);
+                        }
                     } else {
                         Chitchat.sendMessage(getPrefix() + "beep. boop. beep.");
                     }
@@ -138,15 +144,20 @@ public class Bot implements Listener {
                 event.setCancelled(true);
                 event.getPlayer().sendMessage(event.getFormat());
                 if (spamAmount % 5 == 0) {
-                    Bukkit.getScheduler().scheduleAsyncDelayedTask(BotPlugin.INST, () -> {
-                        event.getPlayer().sendMessage(ChatColor.DARK_GRAY + "PM from" + " <" + ChatColor.DARK_AQUA +
-                                getName() + ChatColor.DARK_GRAY + ">: " + ChatColor.GRAY + "Please don't spam me. :C");
-                    }, 10);
+                    event.getPlayer().sendMessage(ChatColor.DARK_GRAY + "PM from" + " <" + ChatColor.DARK_AQUA +
+                            getName() + ChatColor.DARK_GRAY + ">: " + ChatColor.GRAY + "Please don't spam me. :C");
                 }
             }
         } else if (!message.contains("@")) {
             if (listensTo.isEmpty()) {
-                getBrain().add(message);
+                if (lastTime > System.currentTimeMillis() - 4000 && lastPlayer.equals(event.getPlayer().getName())) {
+                    lastMessage += ((char) 10) + message;
+                    lastTime = System.currentTimeMillis();
+                } else {
+                    getBrain().add(lastMessage);
+                    lastMessage = message;
+                    lastPlayer = event.getPlayer().getName();
+                }
             } else if (listensTo.contains(event.getPlayer().getName())) {
                 getBrain().add(message);
             }
