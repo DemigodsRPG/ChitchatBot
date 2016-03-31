@@ -150,7 +150,7 @@ public class Bot implements Listener {
             }
         } else if (!message.contains("@")) {
             if (listensTo.isEmpty()) {
-                if (lastTime > System.currentTimeMillis() - 4000 && lastPlayer.equals(event.getPlayer().getName())) {
+                if (lastTime > System.currentTimeMillis() - 7000 && lastPlayer.equals(event.getPlayer().getName())) {
                     lastMessage += ((char) 10) + message;
                     lastTime = System.currentTimeMillis();
                 } else {
