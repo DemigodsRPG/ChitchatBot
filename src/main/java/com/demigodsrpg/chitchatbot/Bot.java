@@ -34,18 +34,23 @@ public class Bot implements Listener {
     private final String name, prefix;
     private final boolean talks;
     private final long freqTicks;
+    private final double challengeChance;
 
-    public Bot(String name, String prefix, boolean talks, long freqTicks, String... listensTo) {
-        this(name, prefix, talks, freqTicks, Arrays.asList(listensTo));
+    public Bot(String name, String prefix, boolean talks, long freqTicks, double challengeChance, int wordLimit, String... listensTo) {
+        this(name, prefix, talks, freqTicks, challengeChance, wordLimit, Arrays.asList(listensTo));
     }
 
-    public Bot(String name, String prefix, boolean talks, long freqTicks, List<String> listensTo) {
+    public Bot(String name, String prefix, boolean talks, long freqTicks, double challengeChance, int wordLimit, List<String> listensTo) {
         this.name = name;
         this.prefix = prefix;
         this.talks = talks;
         this.freqTicks = freqTicks;
+        this.challengeChance = challengeChance;
         this.listensTo = listensTo;
-        this.brain = tryLoadFromFile();
+        this.brain = tryLoadFromFile(wordLimit);
+        brain.setLastPlayer("");
+        brain.setLastTime(0L);
+        brain.setLastMessage("");
     }
 
     public Brain getBrain() {
@@ -66,6 +71,10 @@ public class Bot implements Listener {
 
     public long getFreqTicks() {
         return freqTicks;
+    }
+
+    public double getChallengeChance() {
+        return challengeChance;
     }
 
     public int getSpamAmount(String replyTo) {
@@ -99,7 +108,7 @@ public class Bot implements Listener {
         }
     }
 
-    public Brain tryLoadFromFile() {
+    public Brain tryLoadFromFile(int wordLimit) {
         Gson gson = new GsonBuilder().create();
         try {
             File file = new File(SAVE_PATH + name + ".json");
@@ -107,32 +116,28 @@ public class Bot implements Listener {
                 FileInputStream inputStream = new FileInputStream(file);
                 InputStreamReader reader = new InputStreamReader(inputStream);
                 Brain brain = gson.fromJson(reader, Brain.class);
+                brain.refresh(wordLimit);
                 reader.close();
                 return brain;
             }
         } catch (Exception oops) {
             oops.printStackTrace();
         }
-        return new Brain();
+        return new Brain(wordLimit);
     }
 
-    private String lastPlayer = "";
-    private Long lastTime = 0L;
-    private String lastMessage = "";
-
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = false)
     public void onChat(AsyncPlayerChatEvent event) {
-        String message = event.getMessage();
+        String message = event.getMessage().replaceAll("⏎", "");
+        boolean learn = listensTo.isEmpty() || listensTo.contains(event.getPlayer().getName());
         if (message.toLowerCase().contains("@" + getName().toLowerCase())) {
             int spamAmount = getSpamAmount(event.getPlayer().getName());
             if (spamAmount < 1) {
-                String[] parts = message.toLowerCase().trim().split("\\s+");
-                String word = parts[RANDOM.nextInt(parts.length)];
-                String[] sentence = getBrain().getSentence(!word.toLowerCase().contains("@" + getName().toLowerCase())
-                        ? word : null).split("" + (char) 10);
+                String statement = removeName(message);
+                List<String> reply = getBrain().getReply(event.getPlayer().getName(), statement, learn);
                 Bukkit.getScheduler().scheduleAsyncDelayedTask(BotPlugin.INST, () -> {
-                    if (!"".equals(sentence[0])) {
-                        for (String part : sentence) {
+                    if (!reply.isEmpty()) {
+                        for (String part : reply) {
                             Chitchat.sendMessage(getPrefix() + part);
                         }
                     } else {
@@ -142,25 +147,34 @@ public class Bot implements Listener {
             } else {
                 // Let them know the bot doesn't like spam
                 event.setCancelled(true);
-                event.getPlayer().sendMessage(event.getFormat());
+                event.getPlayer().sendMessage(ChatColor.GRAY + "** " + getName() + " is thinking... **");
                 if (spamAmount % 5 == 0) {
                     event.getPlayer().sendMessage(ChatColor.DARK_GRAY + "PM from" + " <" + ChatColor.DARK_AQUA +
                             getName() + ChatColor.DARK_GRAY + ">: " + ChatColor.GRAY + "Please don't spam me. :C");
                 }
             }
         } else if (!message.contains("@")) {
-            if (listensTo.isEmpty()) {
-                if (lastTime > System.currentTimeMillis() - 7000 && lastPlayer.equals(event.getPlayer().getName())) {
-                    lastMessage += ((char) 10) + message;
-                    lastTime = System.currentTimeMillis();
-                } else {
-                    getBrain().add(lastMessage);
-                    lastMessage = message;
-                    lastPlayer = event.getPlayer().getName();
+            if (learn) {
+                try {
+                    if (getBrain().getLastTime() + 7000L > System.currentTimeMillis() && getBrain().getLastPlayer().
+                            equals(event.getPlayer().getName())) {
+                        getBrain().setLastMessage(getBrain().getLastMessage() + "⏎" + message);
+                        getBrain().setLastTime(System.currentTimeMillis());
+                    } else {
+                        if (!"".equals(getBrain().getLastMessage())) {
+                            getBrain().add(getBrain().getLastMessage());
+                        }
+                        getBrain().setLastMessage(message);
+                        getBrain().setLastPlayer(event.getPlayer().getName());
+                    }
+                } catch (Exception oops) {
+                    oops.printStackTrace();
                 }
-            } else if (listensTo.contains(event.getPlayer().getName())) {
-                getBrain().add(message);
             }
         }
+    }
+
+    private String removeName(String message) {
+        return message.replaceAll("(?i)(@" + getName().toLowerCase() + ")", "").trim();
     }
 }

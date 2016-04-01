@@ -1,25 +1,29 @@
 package com.demigodsrpg.chitchatbot.ai;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
-public class Quad<T extends Serializable> implements Serializable {
+public class Quad implements Serializable {
     String id;
-    T t1, t2, t3, t4;
+    List<String> related;
+    String t1, t2, t3, t4;
     boolean canStart = false;
     boolean canEnd = false;
 
     public Quad() {
     }
 
-    public Quad(T t1, T t2, T t3, T t4) {
-        this.id = t1.toString() + t2.toString() + t3.toString() + t4.toString();
+    public Quad(String t1, String t2, String t3, String t4) {
+        this.id = t1 + t2 + t3 + t4;
         this.t1 = t1;
         this.t2 = t2;
         this.t3 = t3;
         this.t4 = t4;
+        related = new ArrayList<>();
     }
 
-    public T getToken(int index) {
+    public String getToken(int index) {
         switch (index) {
             case 0:
                 return t1;
@@ -31,6 +35,20 @@ public class Quad<T extends Serializable> implements Serializable {
                 return t4;
         }
         return null;
+    }
+
+    public void addRelated(String id) {
+        if (related == null) {
+            related = new ArrayList<>();
+        }
+        related.add(id);
+    }
+
+    public void addAllRelated(List<String> ids) {
+        if (related == null) {
+            related = new ArrayList<>();
+        }
+        related.addAll(ids);
     }
     
     public void setCanStart(boolean flag) {
@@ -51,6 +69,13 @@ public class Quad<T extends Serializable> implements Serializable {
 
     public boolean isValid() {
         return t1 != null && t2 != null && t3 != null && t4 != null;
+    }
+
+    public List<String> getRelated() {
+        if (related == null) {
+            related = new ArrayList<>();
+        }
+        return related;
     }
 
     public String getId() {
@@ -77,5 +102,13 @@ public class Quad<T extends Serializable> implements Serializable {
                     other.t4.equals(t4);
         }
         return false;
+    }
+
+    public boolean nearMatch(Quad quad) {
+        boolean m1 = quad.t1.equalsIgnoreCase(this.t1);
+        boolean m2 = quad.t2.equalsIgnoreCase(this.t2);
+        boolean m3 = quad.t3.equalsIgnoreCase(this.t3);
+        boolean m4 = quad.t4.equalsIgnoreCase(this.t4);
+        return m1 && m2 && m3 || m1 && m2 && m4 || m1 && m3 && m4 || m2 && m3 && m4;
     }
 }

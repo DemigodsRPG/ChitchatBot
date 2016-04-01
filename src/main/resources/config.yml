@@ -4,6 +4,8 @@ bots:
     listensTo: []
     talks: true
     freqTicks: 7000
+    challengeChance: 0.3
+    word_limit: 10000
   HQMBot:
     prefix: '&8[&dF&8]&6[&2BOT&6]&3HQMBot&7: &f'
     listensTo:
@@ -12,15 +14,21 @@ bots:
       - 'HandyQuestMarker'
     talks: false
     freqTicks: 0
+    challengeChance: 0.0
+    word_limit: 10000
   PandaBot:
     prefix: '&8[&dF&8]&6[&2BOT&6]&f&lPandaBot&7: &f'
     listensTo:
       - 'ChosenPanda'
     talks: false
     freqTicks: 0
+    challengeChance: 0.0
+    word_limit: 10000
   MausBot:
     prefix: '&8[&dF&8]&6[&2BOT&6]&2MausBot&7: &f'
     listensTo:
       - 'janie177'
     talks: false
     freqTicks: 0
+    challengeChance: 0.0
+    word_limit: 10000
