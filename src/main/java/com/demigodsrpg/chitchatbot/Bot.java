@@ -139,7 +139,7 @@ public class Bot implements Listener {
                 (listensTo.isEmpty() || listensTo.contains(event.getPlayer().getName()));
         if (message.toLowerCase().contains("@" + getName().toLowerCase())) {
             int spamAmount = getSpamAmount(event.getPlayer().getName());
-            if (spamAmount < 1) {
+            if ("".equals(removeName(getName(), message)) || spamAmount < 1) {
                 String statement = removeName(getName(), message);
                 List<String> reply = getBrain().getReply(event.getPlayer().getName(), statement, learn);
                 if (!reply.isEmpty() && reply.get(0).startsWith("@")) {
