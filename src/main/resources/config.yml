@@ -1,33 +1,19 @@
 bots:
-  GustaBot:
-    prefix: '&8[&dF&8]&6[&2BOT&6]&4GustaBot&7: &f'
+  ChitchatBot:
+    prefix: '&8[&2BOT&8]&4ChitchatBot&7: &f'
     listensTo: []
+    requires_perm: false
     talks: true
     freqTicks: 7000
     challengeChance: 0.3
     word_limit: 10000
   HQMBot:
-    prefix: '&8[&dF&8]&6[&2BOT&6]&3HQMBot&7: &f'
+    prefix: '&8[&2BOT&8]&3HQMBot&7: &f'
     listensTo:
       - 'HQM'
       - 'HmmmQuestionMark'
-      - 'HandyQuestMarker'
-    talks: false
-    freqTicks: 0
-    challengeChance: 0.0
-    word_limit: 10000
-  PandaBot:
-    prefix: '&8[&dF&8]&6[&2BOT&6]&f&lPandaBot&7: &f'
-    listensTo:
-      - 'ChosenPanda'
-    talks: false
-    freqTicks: 0
-    challengeChance: 0.0
-    word_limit: 10000
-  MausBot:
-    prefix: '&8[&dF&8]&6[&2BOT&6]&2MausBot&7: &f'
-    listensTo:
-      - 'janie177'
+      - 'HmmmQM'
+    requires_perm: false
     talks: false
     freqTicks: 0
     challengeChance: 0.0

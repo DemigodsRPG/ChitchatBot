@@ -35,17 +35,23 @@ public class Bot implements Listener {
     private final boolean talks;
     private final long freqTicks;
     private final double challengeChance;
+    private final boolean requiresPerm;
+    private final String permission;
 
-    public Bot(String name, String prefix, boolean talks, long freqTicks, double challengeChance, int wordLimit, String... listensTo) {
-        this(name, prefix, talks, freqTicks, challengeChance, wordLimit, Arrays.asList(listensTo));
+    public Bot(String name, String prefix, boolean talks, long freqTicks, double challengeChance, int wordLimit,
+               boolean requiresPerm, String... listensTo) {
+        this(name, prefix, talks, freqTicks, challengeChance, wordLimit, requiresPerm, Arrays.asList(listensTo));
     }
 
-    public Bot(String name, String prefix, boolean talks, long freqTicks, double challengeChance, int wordLimit, List<String> listensTo) {
+    public Bot(String name, String prefix, boolean talks, long freqTicks, double challengeChance, int wordLimit,
+               boolean requiresPerm, List<String> listensTo) {
         this.name = name;
         this.prefix = prefix;
         this.talks = talks;
         this.freqTicks = freqTicks;
         this.challengeChance = challengeChance;
+        this.requiresPerm = requiresPerm;
+        this.permission = "chitchatbot." + name.toLowerCase();
         this.listensTo = listensTo;
         this.brain = tryLoadFromFile(wordLimit);
         brain.setLastPlayer("");
@@ -129,7 +135,8 @@ public class Bot implements Listener {
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = false)
     public void onChat(AsyncPlayerChatEvent event) {
         String message = event.getMessage().replaceAll("⏎", "");
-        boolean learn = listensTo.isEmpty() || listensTo.contains(event.getPlayer().getName());
+        boolean learn = (!requiresPerm || event.getPlayer().hasPermission(permission)) &&
+                (listensTo.isEmpty() || listensTo.contains(event.getPlayer().getName()));
         if (message.toLowerCase().contains("@" + getName().toLowerCase())) {
             int spamAmount = getSpamAmount(event.getPlayer().getName());
             if (spamAmount < 1) {
@@ -137,8 +144,14 @@ public class Bot implements Listener {
                 List<String> reply = getBrain().getReply(event.getPlayer().getName(), statement, learn);
                 Bukkit.getScheduler().scheduleAsyncDelayedTask(BotPlugin.INST, () -> {
                     if (!reply.isEmpty()) {
-                        for (String part : reply) {
-                            Chitchat.sendMessage(getPrefix() + part);
+                        if (reply.get(0).startsWith("@")) {
+                            for (String part : reply) {
+                                event.getPlayer().sendMessage(ChatColor.GRAY + "** " + getPrefix() + part);
+                            }
+                        } else {
+                            for (String part : reply) {
+                                Chitchat.sendMessage(getPrefix() + part);
+                            }
                         }
                     } else {
                         Chitchat.sendMessage(getPrefix() + "beep. boop. beep.");
@@ -148,10 +161,6 @@ public class Bot implements Listener {
                 // Let them know the bot doesn't like spam
                 event.setCancelled(true);
                 event.getPlayer().sendMessage(ChatColor.GRAY + "** " + getName() + " is thinking... **");
-                if (spamAmount % 5 == 0) {
-                    event.getPlayer().sendMessage(ChatColor.DARK_GRAY + "PM from" + " <" + ChatColor.DARK_AQUA +
-                            getName() + ChatColor.DARK_GRAY + ">: " + ChatColor.GRAY + "Please don't spam me. :C");
-                }
             }
         } else if (!message.contains("@")) {
             if (learn) {

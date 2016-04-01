@@ -5,6 +5,8 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
+import org.bukkit.permissions.Permission;
+import org.bukkit.permissions.PermissionDefault;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.ArrayList;
@@ -32,8 +34,18 @@ public class BotPlugin extends JavaPlugin {
                     double challengeChance = getConfig().getDouble("bots." + botName + ".challengeChance", 0.3);
                     int wordLimit = getConfig().getInt("bots." + botName + ".wordlimit", 10000);
                     List<String> listensTo = getConfig().getStringList("bots." + botName + ".listensTo");
-                    return new Bot(botName, prefix, talks, freqTicks, challengeChance, wordLimit, listensTo);
+                    boolean requiresPerm = getConfig().getBoolean("requires_perm", false);
+                    return new Bot(botName, prefix, talks, freqTicks, challengeChance, wordLimit, requiresPerm, listensTo);
                 }).collect(Collectors.toList()));
+
+        // Handle permissions
+        for (Bot bot : BOTS) {
+            Permission perm = new Permission("chitchatbot." + bot.getName().toLowerCase(), PermissionDefault.FALSE);
+            try {
+                getServer().getPluginManager().addPermission(perm);
+            } catch (Exception ignored) {
+            }
+        }
 
         int count = 0;
         for (Bot bot : BOTS) {
@@ -43,13 +55,19 @@ public class BotPlugin extends JavaPlugin {
                 getServer().getScheduler().scheduleAsyncRepeatingTask(this, () -> {
                     List<String> sentence;
                     if (randomPercentBool(bot.getChallengeChance())) {
-                        sentence = bot.getBrain().challenge(getRandomPlayer().getName());
+                        Player player = getRandomPlayer();
+                        sentence = bot.getBrain().challenge(player.getName());
+                        if (!sentence.isEmpty()) {
+                            for (String part : sentence) {
+                                player.sendMessage(ChatColor.GRAY + "** " + bot.getPrefix() + part);
+                            }
+                        }
                     } else {
                         sentence = bot.getBrain().getSentence().get(1);
-                    }
-                    if (!sentence.isEmpty()) {
-                        for (String part : sentence) {
-                            Chitchat.sendMessage(bot.getPrefix() + part);
+                        if (!sentence.isEmpty()) {
+                            for (String part : sentence) {
+                                Chitchat.sendMessage(bot.getPrefix() + part);
+                            }
                         }
                     }
                 }, count * bot.getFreqTicks() / 100, bot.getFreqTicks());
