@@ -132,7 +132,7 @@ public class Bot implements Listener {
         return new Brain(wordLimit);
     }
 
-    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = false)
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onChat(AsyncPlayerChatEvent event) {
         String message = event.getMessage().replaceAll("⏎", "");
         boolean learn = (!requiresPerm || event.getPlayer().hasPermission(permission)) &&
@@ -140,13 +140,21 @@ public class Bot implements Listener {
         if (message.toLowerCase().contains("@" + getName().toLowerCase())) {
             int spamAmount = getSpamAmount(event.getPlayer().getName());
             if (spamAmount < 1) {
-                String statement = removeName(message);
+                String statement = removeName(getName(), message);
                 List<String> reply = getBrain().getReply(event.getPlayer().getName(), statement, learn);
+                if (!reply.isEmpty() && reply.get(0).startsWith("@")) {
+                    event.setCancelled(true);
+                    event.getPlayer().sendMessage(ChatColor.GRAY + "" + ChatColor.ITALIC + "@" + getName() + " " +
+                            ChatColor.GRAY + event.getPlayer().getDisplayName() + ChatColor.GRAY + ": " +
+                            ChatColor.WHITE + removeName(getName(), event.getMessage()));
+                }
                 Bukkit.getScheduler().scheduleAsyncDelayedTask(BotPlugin.INST, () -> {
                     if (!reply.isEmpty()) {
                         if (reply.get(0).startsWith("@")) {
+                            String playerName = event.getPlayer().getName();
                             for (String part : reply) {
-                                event.getPlayer().sendMessage(ChatColor.GRAY + "** " + getPrefix() + part);
+                                event.getPlayer().sendMessage(ChatColor.GRAY + "" + ChatColor.ITALIC + "@" +
+                                        playerName + " " + ChatColor.GRAY + getPrefix() + removeName(playerName, part));
                             }
                         } else {
                             for (String part : reply) {
@@ -183,7 +191,7 @@ public class Bot implements Listener {
         }
     }
 
-    private String removeName(String message) {
-        return message.replaceAll("(?i)(@" + getName().toLowerCase() + ")", "").trim();
+    private String removeName(String name, String message) {
+        return message.replaceAll("(?i)(@" + name.toLowerCase() + ")", "").trim();
     }
 }
