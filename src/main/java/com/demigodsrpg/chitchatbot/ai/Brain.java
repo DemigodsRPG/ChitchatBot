@@ -180,6 +180,10 @@ public class Brain implements Serializable {
             LinkedList<String> parts = new LinkedList<>();
 
             if (given.size() < 2) {
+                List<List<String>> sentence = getSentence();
+                if (sentence == null || sentence.size() < 2) {
+                    return Collections.singletonList("beep. boop. beep.");
+                }
                 return getSentence().get(1);
             }
 
