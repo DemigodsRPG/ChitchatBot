@@ -51,7 +51,7 @@ public class Bot implements Listener {
         this.freqTicks = freqTicks;
         this.challengeChance = challengeChance;
         this.requiresPerm = requiresPerm;
-        this.permission = "chitchatbot." + name.toLowerCase();
+        this.permission = "chitchatbot.bot." + name.toLowerCase();
         this.listensTo = listensTo;
         this.brain = tryLoadFromFile(wordLimit);
         brain.setLastPlayer("");
@@ -99,7 +99,15 @@ public class Bot implements Listener {
     }
 
     public void saveToFile() {
-        File file = new File(SAVE_PATH + name + ".json");
+        saveToFile(SAVE_PATH + name + ".json");
+    }
+
+    public void backupToFile() {
+        saveToFile(SAVE_PATH + name + ".json.backup");
+    }
+
+    private void saveToFile(String fileName) {
+        File file = new File(fileName);
         if (!(file.exists())) {
             createFile(file);
         }
@@ -189,6 +197,13 @@ public class Bot implements Listener {
                 }
             }
         }
+    }
+
+    public void purge(boolean backup) {
+        if (backup) {
+            backupToFile();
+        }
+        getBrain().purge();
     }
 
     private String removeName(String name, String message) {

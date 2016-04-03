@@ -4,3 +4,10 @@ version: ${project.version}
 description: ${project.description}
 authors: [HmmmQuestionMark]
 depend: [Chitchat]
+commands:
+  chitchatbot:
+    usage: /chitchatbot <info|purge> <bot>
+    alias: [ccb]
+permissions:
+  chitchatbot.info:
+    default: op

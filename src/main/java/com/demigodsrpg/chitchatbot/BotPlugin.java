@@ -3,6 +3,8 @@ package com.demigodsrpg.chitchatbot;
 import com.demigodsrpg.chitchat.Chitchat;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.bukkit.permissions.Permission;
@@ -11,6 +13,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
 
@@ -34,18 +37,14 @@ public class BotPlugin extends JavaPlugin {
                     double challengeChance = getConfig().getDouble("bots." + botName + ".challengeChance", 0.3);
                     int wordLimit = getConfig().getInt("bots." + botName + ".wordlimit", 10000);
                     List<String> listensTo = getConfig().getStringList("bots." + botName + ".listensTo");
-                    boolean requiresPerm = getConfig().getBoolean("requires_perm", false);
+                    boolean requiresPerm = getConfig().getBoolean("bots." + botName + ".requires_perm", false);
+                    Permission perm = new Permission("chitchatbot.bot." + botName.toLowerCase(), PermissionDefault.FALSE);
+                    try {
+                        getServer().getPluginManager().addPermission(perm);
+                    } catch (Exception ignored) {
+                    }
                     return new Bot(botName, prefix, talks, freqTicks, challengeChance, wordLimit, requiresPerm, listensTo);
                 }).collect(Collectors.toList()));
-
-        // Handle permissions
-        for (Bot bot : BOTS) {
-            Permission perm = new Permission("chitchatbot." + bot.getName().toLowerCase(), PermissionDefault.FALSE);
-            try {
-                getServer().getPluginManager().addPermission(perm);
-            } catch (Exception ignored) {
-            }
-        }
 
         int count = 0;
         for (Bot bot : BOTS) {
@@ -81,10 +80,55 @@ public class BotPlugin extends JavaPlugin {
     public void onDisable() {
         for (Bot bot : BOTS) {
             bot.saveToFile();
-            bot.getBrain().purge();
+            bot.purge(false);
         }
         HandlerList.unregisterAll(this);
         getLogger().info("Brains purged, poor things... :C");
+    }
+
+    @Override
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if ("chitchatbot".equals(command.getName())) {
+            if (args.length >= 2) {
+                Optional<Bot> oBot = BOTS.stream().filter(b -> b.getName().equalsIgnoreCase(args[1])).findAny();
+                if (!oBot.isPresent()) {
+                    sender.sendMessage(ChatColor.RED + "No such bot exists, try again.");
+                }
+                Bot bot = oBot.get();
+                if ("info".equalsIgnoreCase(args[0])) {
+                    if (!sender.hasPermission("chitchatbot.info")) {
+                        sender.sendMessage(ChatColor.RED + "You do not have permission to use this command.");
+                        return true;
+                    }
+
+                    // INFO
+                    sender.sendMessage(ChatColor.GREEN + "Info for " + bot.getName() + ":");
+                    sender.sendMessage(ChatColor.YELLOW + " - Permission: " + "chitchatbot.bot." + bot.getName().
+                            toLowerCase());
+                    sender.sendMessage(ChatColor.YELLOW + " - Prefix: " + bot.getPrefix());
+                    sender.sendMessage(ChatColor.YELLOW + " - Auto-talks: " + bot.getTalks());
+                    if (bot.getTalks()) {
+                        sender.sendMessage(ChatColor.YELLOW + " - Talk frequency: " + bot.getFreqTicks());
+                    }
+                    sender.sendMessage(ChatColor.YELLOW + " - Challenge chance: " + bot.getChallengeChance());
+                    sender.sendMessage(ChatColor.YELLOW + " - # of Quads: " + bot.getBrain().size());
+                    return true;
+                }
+                if ("purge".equalsIgnoreCase(args[0])) {
+                    if (sender instanceof Player) {
+                        sender.sendMessage(ChatColor.RED + "Only the console may use this command.");
+                        return true;
+                    }
+
+                    bot.purge(true);
+                    sender.sendMessage(ChatColor.RED + bot.getName() + " memory purged, backup made.");
+                    return true;
+                }
+            }
+            sender.sendMessage(ChatColor.RED + "Invalid arguments.");
+            return false;
+        }
+        return false;
     }
 
     /*

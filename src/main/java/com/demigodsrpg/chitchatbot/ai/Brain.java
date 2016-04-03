@@ -426,4 +426,8 @@ public class Brain implements Serializable {
         }
         return quads.stream().map(QUADS::get).collect(Collectors.toList());
     }
+
+    public int size() {
+        return QUADS.size();
+    }
 }
